@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="The Black Residence - Jogo 2D top-down de Survival Horror com iluminação dinâmica, lanterna, colisão em grid e perseguição sombria.">
+  <title>The Black Residence | Survival Horror 2D</title>
+  
+  <!-- Google Fonts for Atmospheric Horror Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Creepster&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="gameWrapper" class="game-wrapper">
+    
+    <!-- Top Header Bar -->
+    <header class="game-header">
+      <div class="logo-group">
+        <span class="skull-icon">☠</span>
+        <h1 class="game-title">THE BLACK RESIDENCE</h1>
+      </div>
+      <div class="header-controls">
+        <button id="adminLightsBtn" class="hud-btn admin-btn" title="Alternar iluminação total do mapa [Tecla L]">💡 Luzes: OFF</button>
+        <button id="muteBtn" class="hud-btn" title="Alternar som">🔊 Som Ligado</button>
+      </div>
+    </header>
+
+    <!-- Canvas Viewport Container -->
+    <div id="viewportContainer" class="viewport-container">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- In-Game HUD Overlay -->
+      <div id="hudOverlay" class="hud-overlay">
+        
+        <!-- Key Inventory -->
+        <div class="hud-card keys-hud">
+          <span class="hud-label">CHAVES DO PORTÃO</span>
+          <div class="keys-container">
+            <div id="keySlot1" class="key-slot" title="Chave 1">
+              <span class="key-icon">🗝️</span>
+              <span class="key-num">1</span>
+            </div>
+            <div id="keySlot2" class="key-slot" title="Chave 2">
+              <span class="key-icon">🗝️</span>
+              <span class="key-num">2</span>
+            </div>
+            <div id="keySlot3" class="key-slot" title="Chave 3">
+              <span class="key-icon">🗝️</span>
+              <span class="key-num">3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger State Alert Indicator -->
+        <div id="dangerAlert" class="danger-badge">
+          <span class="pulse-dot"></span>
+          <span class="danger-text">⚠️ ALERTA: ENTIDADE EM PERSEGUIÇÃO!</span>
+        </div>
+
+        <!-- Stamina Meter -->
+        <div class="hud-card stamina-hud">
+          <div class="stamina-header">
+            <span class="hud-label">FÔLEGO [SHIFT]</span>
+          </div>
+          <div class="stamina-track">
+            <div id="staminaFill" class="stamina-fill"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Toast Notification Message -->
+      <div id="notificationToast" class="notification-toast hidden">
+        Encontre as 3 chaves para destravar o portão.
+      </div>
+
+      <!-- Start / Title Screen Overlay -->
+      <div id="titleScreen" class="overlay-screen">
+        <div class="overlay-card">
+          <div class="card-glow"></div>
+          <p class="horror-sub">EXPEDIÇÃO SOMBRIA</p>
+          <h2 class="horror-headline">THE BLACK RESIDENCE</h2>
+          <div class="divider"></div>
+          <p class="story-text">
+            Você acordou preso no interior de uma residência abandonada. 
+            Uma entidade sanguinária vagueia pelos corredores silenciosos. 
+            Explore os aposentos, <strong>encontre as 3 chaves douradas</strong> e alcance o portão norte para escapar.
+          </p>
+
+          <div class="controls-guide">
+            <div class="control-item">
+              <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span>
+              <span class="control-label">Mover em 4 direções</span>
+            </div>
+            <div class="control-item">
+              <span class="key-badge">MOUSE</span>
+              <span class="control-label">Direcionar Lanterna</span>
+            </div>
+            <div class="control-item">
+              <span class="key-badge">SHIFT</span>
+              <span class="control-label">Correr (cuidado com o som!)</span>
+            </div>
+            <div class="control-item">
+              <span class="key-badge">L</span>
+              <span class="control-label">Admin: Acender/Apagar Luzes</span>
+            </div>
+          </div>
+
+          <button id="startBtn" class="action-btn primary-action">ENTRAR NA ESCURIDÃO</button>
+        </div>
+      </div>
+
+      <!-- Game Over Overlay -->
+      <div id="gameOverScreen" class="overlay-screen death-theme hidden">
+        <div class="overlay-card death-card">
+          <div class="card-glow red-glow"></div>
+          <p class="horror-sub red-sub">FIM DE JOGO</p>
+          <h2 class="horror-headline red-text">VOCÊ FOI PEGO</h2>
+          <div class="divider red-divider"></div>
+          <p class="story-text">
+            A criatura ouviu seus passos nos tablados frios... Sua respiração cessou na penumbra.
+          </p>
+          <button id="restartBtn" class="action-btn red-action">TENTAR NOVAMENTE [R]</button>
+        </div>
+      </div>
+
+      <!-- Victory Screen Overlay -->
+      <div id="victoryScreen" class="overlay-screen win-theme hidden">
+        <div class="overlay-card win-card">
+          <div class="card-glow green-glow"></div>
+          <p class="horror-sub green-sub">SOBREVIVÊNCIA</p>
+          <h2 class="horror-headline green-text">VOCÊ ESCAPOU!</h2>
+          <div class="divider green-divider"></div>
+          <p class="story-text">
+            O pesadelo ficou para trás. Com as 3 chaves reunidas, você destrancou o portão de ferro e rompeu a escuridão da residência.
+          </p>
+          <div class="victory-stats">
+            <span>Tempo de Fuga: <strong id="victoryTime">0.0s</strong></span>
+          </div>
+          <button id="winRestartBtn" class="action-btn green-action" onclick="window.gameInstance.restartGame()">JOGAR NOVAMENTE [R]</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Controls Bar -->
+    <footer class="game-footer">
+      <div class="hints">
+        <span>💡 <strong>Dica:</strong> A criatura patrulha no modo <em>'Espera'</em>, mas se você correr ou cruzar a visão dela, ela entrará em <em>'Perseguição'</em> implacável!</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

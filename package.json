@@ -1,0 +1,12 @@
+{
+  "name": "survival-horror-2d",
+  "version": "1.0.0",
+  "description": "2D top-down survival horror game with pure JS, Canvas, dynamic darkness and lighting",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 3000"
+  },
+  "keywords": ["survival-horror", "game", "canvas", "javascript"],
+  "author": "",
+  "license": "MIT"
+}
