@@ -22,7 +22,7 @@ export const TILE = {
 export const MAP_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-  [1, 0, 6, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1, 0, 6, 6, 0, 7, 1],
+  [1, 0, 6, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1, 0, 6, 6, 0, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -40,20 +40,32 @@ export const MAP_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// Pool of 12 atmospheric spawn spots for keys across all wings
+// Pool of 12 atmospheric, strictly verified open floor spawn spots for keys across all wings
 export const KEY_SPAWN_LOCATIONS = [
-  { col: 3, row: 7, name: 'Quarto Noroeste' },
-  { col: 2, row: 3, name: 'Aposento Superior Oeste' },
-  { col: 3, row: 12, name: 'Biblioteca Antiga' },
-  { col: 6, row: 13, name: 'Depósito Oeste' },
-  { col: 21, row: 2, name: 'Quarto Nordeste' },
+  { col: 3, row: 1, name: 'Quarto Noroeste' },
+  { col: 3, row: 3, name: 'Aposento Superior Oeste' },
+  { col: 7, row: 1, name: 'Corredor Norte' },
+  { col: 21, row: 1, name: 'Quarto Nordeste' },
+  { col: 18, row: 3, name: 'Aposento Leste Superior' },
+  { col: 3, row: 5, name: 'Ala Oeste' },
+  { col: 3, row: 7, name: 'Salão Oeste' },
   { col: 21, row: 7, name: 'Sala de Estar Leste' },
-  { col: 21, row: 15, name: 'Porão Sombrio' },
-  { col: 18, row: 16, name: 'Adega Subterrânea' },
-  { col: 11, row: 15, name: 'Corredor Sul' },
-  { col: 12, row: 12, name: 'Armazém Central' },
-  { col: 6, row: 5, name: 'Ala Oeste' },
-  { col: 16, row: 5, name: 'Ala Leste' },
+  { col: 4, row: 10, name: 'Entrada da Biblioteca' },
+  { col: 3, row: 12, name: 'Biblioteca Antiga' },
+  { col: 11, row: 15, name: 'Corredor Central Sul' },
+  { col: 21, row: 15, name: 'Fundo do Porão' },
+];
+
+// Pool of 8 atmospheric, strictly verified open floor spawn spots for the Revolver
+export const WEAPON_SPAWN_LOCATIONS = [
+  { col: 22, row: 2, name: 'Quarto Nordeste' },
+  { col: 1, row: 1, name: 'Canto do Quarto Noroeste' },
+  { col: 18, row: 5, name: 'Ala Leste' },
+  { col: 5, row: 13, name: 'Depósito da Biblioteca' },
+  { col: 21, row: 12, name: 'Armazém Leste' },
+  { col: 18, row: 15, name: 'Adega Subterrânea' },
+  { col: 4, row: 15, name: 'Catacumbas Oeste' },
+  { col: 19, row: 10, name: 'Sala dos Espelhos' },
 ];
 
 // Pool of 6 eerie spawn spots for the enemy far from player spawn
@@ -96,37 +108,54 @@ export class GameMap {
       name: randEnemyLoc.name,
     };
 
-    // 2. Pick 3 distinct random spawn spots for the Keys from the pool
+    // 2. Pick 3 distinct random spawn spots for the Keys from the verified floor pool
     const shuffledKeys = [...KEY_SPAWN_LOCATIONS].sort(() => Math.random() - 0.5);
-    for (let i = 0; i < 3; i++) {
+    const chosenKeyLocs = [];
+    for (let i = 0; i < shuffledKeys.length && chosenKeyLocs.length < 3; i++) {
       const loc = shuffledKeys[i];
-      this.keys.push({
-        id: i + 1,
-        locationName: loc.name,
-        gridX: loc.col,
-        gridY: loc.row,
-        x: (loc.col + 0.5) * TILE_SIZE,
-        y: (loc.row + 0.5) * TILE_SIZE,
-        collected: false,
-        animTimer: Math.random() * Math.PI * 2,
-      });
+      // Guarantee: Never spawn on solid obstacle or wall
+      if (!this.isSolid(loc.col, loc.row)) {
+        chosenKeyLocs.push(loc);
+        this.keys.push({
+          id: chosenKeyLocs.length,
+          locationName: loc.name,
+          gridX: loc.col,
+          gridY: loc.row,
+          x: (loc.col + 0.5) * TILE_SIZE,
+          y: (loc.row + 0.5) * TILE_SIZE,
+          collected: false,
+          animTimer: Math.random() * Math.PI * 2,
+        });
+      }
     }
 
-    // 3. Scan grid for static elements (Exit door, weapon, ammo)
+    // 3. Pick a random spawn spot for the Weapon (Revolver)
+    const shuffledWeapons = [...WEAPON_SPAWN_LOCATIONS].sort(() => Math.random() - 0.5);
+    for (const wLoc of shuffledWeapons) {
+      // Ensure weapon does not conflict with chosen keys or solid tiles
+      const conflict = chosenKeyLocs.some(k => k.col === wLoc.col && k.row === wLoc.row);
+      if (!conflict && !this.isSolid(wLoc.col, wLoc.row)) {
+        this.weapon = {
+          gridX: wLoc.col,
+          gridY: wLoc.row,
+          x: (wLoc.col + 0.5) * TILE_SIZE,
+          y: (wLoc.row + 0.5) * TILE_SIZE,
+          collected: false,
+          name: 'Revólver .38',
+          ammo: 6,
+          animTimer: 0,
+          locationName: wLoc.name,
+        };
+        break;
+      }
+    }
+
+    // 4. Scan grid for static elements (Exit door, ammo)
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const tile = this.grid[r][c];
         if (tile === TILE.WEAPON) {
-          this.weapon = {
-            gridX: c,
-            gridY: r,
-            x: (c + 0.5) * TILE_SIZE,
-            y: (r + 0.5) * TILE_SIZE,
-            collected: false,
-            name: 'Revólver .38',
-            ammo: 6,
-            animTimer: 0,
-          };
+          // If any legacy weapon tile remained, clear it to floor
           this.grid[r][c] = TILE.FLOOR;
         } else if (tile === TILE.AMMO) {
           this.ammoBoxes.push({

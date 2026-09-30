@@ -398,4 +398,76 @@ export class SoundManager {
     ring.start(t + 0.1);
     ring.stop(t + 1.3);
   }
+
+  playThunder() {
+    if (!this.ctx || this.isMuted) return;
+
+    const t = this.ctx.currentTime;
+
+    // 1. Initial sharp crack / lightning snap (high frequencies)
+    const crackLen = Math.floor(this.ctx.sampleRate * 0.14);
+    const crackBuffer = this.ctx.createBuffer(1, crackLen, this.ctx.sampleRate);
+    const crackData = crackBuffer.getChannelData(0);
+    for (let i = 0; i < crackLen; i++) {
+      crackData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.025));
+    }
+    const crackSource = this.ctx.createBufferSource();
+    crackSource.buffer = crackBuffer;
+
+    const crackFilter = this.ctx.createBiquadFilter();
+    crackFilter.type = 'highpass';
+    crackFilter.frequency.setValueAtTime(600, t);
+
+    const crackGain = this.ctx.createGain();
+    crackGain.gain.setValueAtTime(0.4, t);
+    crackGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+
+    crackSource.connect(crackFilter);
+    crackFilter.connect(crackGain);
+    crackGain.connect(this.ctx.destination);
+    crackSource.start(t);
+
+    // 2. Heavy Sub-Bass Boom (the visceral physical impact)
+    const boomOsc = this.ctx.createOscillator();
+    const boomGain = this.ctx.createGain();
+    boomOsc.type = 'triangle';
+    boomOsc.frequency.setValueAtTime(90, t);
+    boomOsc.frequency.exponentialRampToValueAtTime(26, t + 1.4);
+
+    boomGain.gain.setValueAtTime(0.6, t);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+
+    boomOsc.connect(boomGain);
+    boomGain.connect(this.ctx.destination);
+    boomOsc.start(t);
+    boomOsc.stop(t + 1.7);
+
+    // 3. Low-Frequency Rolling Thunder Rumble (atmospheric reverberation across 3 seconds)
+    const rumbleLen = Math.floor(this.ctx.sampleRate * 2.8);
+    const rumbleBuffer = this.ctx.createBuffer(1, rumbleLen, this.ctx.sampleRate);
+    const rumbleData = rumbleBuffer.getChannelData(0);
+    for (let i = 0; i < rumbleLen; i++) {
+      const progress = i / this.ctx.sampleRate;
+      // Rolling peaks to sound like echoes reflecting off distant hills and walls
+      const wave = 0.6 + 0.4 * Math.sin(progress * 7.5);
+      const envelope = Math.exp(-progress / 0.95);
+      rumbleData[i] = (Math.random() * 2 - 1) * wave * envelope;
+    }
+    const rumbleSource = this.ctx.createBufferSource();
+    rumbleSource.buffer = rumbleBuffer;
+
+    const rumbleFilter = this.ctx.createBiquadFilter();
+    rumbleFilter.type = 'lowpass';
+    rumbleFilter.frequency.setValueAtTime(240, t);
+    rumbleFilter.frequency.linearRampToValueAtTime(90, t + 2.6);
+
+    const rumbleGain = this.ctx.createGain();
+    rumbleGain.gain.setValueAtTime(0.48, t);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.001, t + 2.8);
+
+    rumbleSource.connect(rumbleFilter);
+    rumbleFilter.connect(rumbleGain);
+    rumbleGain.connect(this.ctx.destination);
+    rumbleSource.start(t);
+  }
 }

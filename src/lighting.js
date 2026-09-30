@@ -27,6 +27,15 @@ export class LightingSystem {
 
     // Muzzle Flash
     this.muzzleFlash = null;
+
+    // Atmospheric Lightning Flash System
+    this.lightningIntensity = 0;
+    this.lightningTimer = 0;
+    this.lightningTotalDuration = 0.45; // ~450ms total multi-pulse strike
+  }
+
+  triggerLightning() {
+    this.lightningTimer = this.lightningTotalDuration;
   }
 
   triggerMuzzleFlash(x, y) {
@@ -83,6 +92,29 @@ export class LightingSystem {
         this.muzzleFlash = null;
       }
     }
+
+    // Atmospheric Lightning Flash Simulation (Realistic double-pulse strike)
+    if (this.lightningTimer > 0) {
+      this.lightningTimer = Math.max(0, this.lightningTimer - dt);
+      const elapsed = this.lightningTotalDuration - this.lightningTimer;
+
+      // Pulse 1: 0 to 0.08s -> quick sharp spike (0 to 0.85)
+      // Dip: 0.08s to 0.13s -> drops to 0.25 (inter-flash flicker)
+      // Pulse 2: 0.13s to 0.22s -> massive bright peak (spikes to 1.0)
+      // Fadeout: 0.22s to 0.45s -> exponential fade back to darkness
+      if (elapsed < 0.08) {
+        this.lightningIntensity = (elapsed / 0.08) * 0.85;
+      } else if (elapsed < 0.13) {
+        this.lightningIntensity = 0.85 - ((elapsed - 0.08) / 0.05) * 0.6;
+      } else if (elapsed < 0.22) {
+        this.lightningIntensity = 0.25 + ((elapsed - 0.13) / 0.09) * 0.75;
+      } else {
+        const fadeP = (elapsed - 0.22) / (this.lightningTotalDuration - 0.22);
+        this.lightningIntensity = Math.max(0, (1 - fadeP) * (1 - fadeP));
+      }
+    } else {
+      this.lightningIntensity = 0;
+    }
   }
 
   render(mainCtx, player, enemy, keys) {
@@ -132,9 +164,10 @@ export class LightingSystem {
 
     const ctx = this.maskCtx;
 
-    // 1. Reset darkness mask to pitch black
+    // 1. Reset darkness mask to pitch black (reduced during lightning so the mansion is revealed!)
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(2, 2, 4, 0.985)'; // Pitch black darkness
+    const darkAlpha = Math.max(0.18, 0.985 - this.lightningIntensity * 0.8);
+    ctx.fillStyle = `rgba(2, 2, 4, ${darkAlpha})`;
     ctx.fillRect(0, 0, this.width, this.height);
 
     // 2. Carve out vision using 'destination-out'
@@ -303,6 +336,15 @@ export class LightingSystem {
     vignetteGrad.addColorStop(1, 'rgba(10, 10, 15, 0.85)');
     mainCtx.fillStyle = vignetteGrad;
     mainCtx.fillRect(0, 0, this.width, this.height);
+
+    // 7. Fullscreen Atmospheric Lightning Flash (pale stormy blue moonlight tint)
+    if (this.lightningIntensity > 0) {
+      mainCtx.save();
+      mainCtx.globalCompositeOperation = 'screen';
+      mainCtx.fillStyle = `rgba(180, 215, 255, ${this.lightningIntensity * 0.42})`;
+      mainCtx.fillRect(0, 0, this.width, this.height);
+      mainCtx.restore();
+    }
 
     mainCtx.restore();
   }

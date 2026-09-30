@@ -57,6 +57,9 @@ class Game {
     // Difficulty trigger: 3rd key triggers relentless enraged chase!
     this.thirdKeyTriggered = false;
 
+    // Atmospheric Thunder & Lightning Timer
+    this.thunderTimer = Math.random() * 6 + 10;
+
     // Time tracking
     this.lastTime = performance.now();
     this.startTime = 0;
@@ -171,12 +174,21 @@ class Game {
     });
   }
 
+  triggerAtmosphericThunder() {
+    this.lighting.triggerLightning();
+    if (this.audio) {
+      this.audio.playThunder();
+    }
+    this.screenShake = Math.max(this.screenShake, 0.35);
+  }
+
   startGame() {
     this.audio.init();
     this.audio.resume();
     this.gameState = 'PLAYING';
     this.startTime = performance.now();
     this.thirdKeyTriggered = false;
+    this.thunderTimer = Math.random() * 5 + 8;
     this.showToast('Você está preso na residência. Encontre as 3 chaves douradas!');
 
     const titleScreen = document.getElementById('titleScreen');
@@ -192,6 +204,7 @@ class Game {
     this.player.reset(this.map.playerSpawn.x, this.map.playerSpawn.y);
     this.enemy.reset(this.map.enemySpawn.x, this.map.enemySpawn.y);
     this.thirdKeyTriggered = false;
+    this.thunderTimer = Math.random() * 5 + 8;
     this.bullets = [];
     this.particles = new ParticleSystem();
     this.audio.setHeartbeatRate('slow');
@@ -230,6 +243,13 @@ class Game {
     }
 
     if (this.gameState === 'PLAYING') {
+      // Atmospheric Thunder & Lightning Spawner
+      this.thunderTimer -= dt;
+      if (this.thunderTimer <= 0) {
+        this.triggerAtmosphericThunder();
+        this.thunderTimer = Math.random() * 12 + 12;
+      }
+
       const prevKeyCount = this.player.keys.size;
 
       // Handle Player Input & Physics
@@ -249,7 +269,8 @@ class Game {
           this.enemy.stunTimer = 0;
           this.audio.playEnemyAlert();
           this.audio.setHeartbeatRate('fast');
-          this.screenShake = 0.65;
+          this.screenShake = 0.75;
+          this.triggerAtmosphericThunder();
           this.showToast('🚨 PERIGO MÁXIMO! Você pegou a 3ª chave e a CRIATURA ENTROU EM FÚRIA TOTAL! CORRA PARA O PORTÃO!', 7);
         }
       }

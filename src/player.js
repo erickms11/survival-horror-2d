@@ -183,7 +183,7 @@ export class Player {
     for (const key of map.keys) {
       if (!key.collected) {
         const dist = Math.hypot(this.x - key.x, this.y - key.y);
-        if (dist < this.radius + 16) {
+        if (dist < this.radius + 24) {
           key.collected = true;
           this.keys.add(key.id);
           if (audio) audio.playKeyPickup();
@@ -200,7 +200,7 @@ export class Player {
     // Check weapon pickup
     if (map.weapon && !map.weapon.collected) {
       const dist = Math.hypot(this.x - map.weapon.x, this.y - map.weapon.y);
-      if (dist < this.radius + 18) {
+      if (dist < this.radius + 24) {
         map.weapon.collected = true;
         this.hasWeapon = true;
         this.ammo = map.weapon.ammo || 6;
@@ -214,7 +214,7 @@ export class Player {
       for (const box of map.ammoBoxes) {
         if (!box.collected) {
           const dist = Math.hypot(this.x - box.x, this.y - box.y);
-          if (dist < this.radius + 16) {
+          if (dist < this.radius + 22) {
             box.collected = true;
             this.ammo = Math.min(this.maxAmmo * 2, this.ammo + box.amount);
             this.justPickedAmmo = true;
@@ -227,7 +227,7 @@ export class Player {
     // Check exit door collision / win condition
     if (map.exitDoor && map.exitDoor.isOpen) {
       const exitDist = Math.hypot(this.x - map.exitDoor.x, this.y - map.exitDoor.y);
-      if (exitDist < this.radius + 18) {
+      if (exitDist < this.radius + 24) {
         this.escaped = true;
         if (audio) audio.playVictory();
       }
