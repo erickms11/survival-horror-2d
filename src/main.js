@@ -4,6 +4,7 @@ import { Player } from './player.js';
 import { Enemy, ENEMY_STATE } from './enemy.js';
 import { LightingSystem } from './lighting.js';
 import { SoundManager } from './audio.js';
+import { ParticleSystem } from './bullet.js';
 
 class InputManager {
   constructor() {
@@ -41,6 +42,10 @@ class Game {
     this.player = new Player(this.map.playerSpawn.x, this.map.playerSpawn.y);
     this.enemy = new Enemy(this.map.enemySpawn.x, this.map.enemySpawn.y);
     this.lighting = new LightingSystem(this.width, this.height);
+
+    // Combat & Particles
+    this.bullets = [];
+    this.particles = new ParticleSystem();
 
     // States: 'TITLE', 'PLAYING', 'GAMEOVER', 'VICTORY'
     this.gameState = 'TITLE';
@@ -98,16 +103,40 @@ class Game {
         this.startGame();
       } else if ((this.gameState === 'GAMEOVER' || this.gameState === 'VICTORY') && e.code === 'KeyR') {
         this.restartGame();
+      } else if (this.gameState === 'PLAYING' && e.code === 'Space') {
+        this.tryShoot();
       }
     });
 
-    this.canvas.addEventListener('click', () => {
+    this.canvas.addEventListener('mousedown', (e) => {
       this.audio.init();
       this.audio.resume();
       if (this.gameState === 'TITLE') {
         this.startGame();
+      } else if (this.gameState === 'PLAYING' && e.button === 0) {
+        this.tryShoot();
       }
     });
+  }
+
+  tryShoot() {
+    if (this.gameState !== 'PLAYING') return;
+    const res = this.player.shoot();
+    if (!res) return;
+
+    if (res.dryClick) {
+      this.audio.playEmptyClick();
+      this.showToast('⚠️ Sem munição! Encontre as caixas de balas pelo mapa.', 2);
+      return;
+    }
+
+    if (res.bullet) {
+      this.bullets.push(res.bullet);
+      this.audio.playGunshot();
+      this.lighting.triggerMuzzleFlash(res.muzzleX, res.muzzleY);
+      this.screenShake = 0.28;
+      this.particles.spawnSparks(res.muzzleX, res.muzzleY, 7, '#fef08a');
+    }
   }
 
   toggleAdminLights() {
@@ -158,6 +187,8 @@ class Game {
     this.map = new GameMap();
     this.player.reset(this.map.playerSpawn.x, this.map.playerSpawn.y);
     this.enemy.reset(this.map.enemySpawn.x, this.map.enemySpawn.y);
+    this.bullets = [];
+    this.particles = new ParticleSystem();
     this.audio.setHeartbeatRate('slow');
     this.startGame();
   }
@@ -210,6 +241,16 @@ class Game {
         }
       }
 
+      // Handle Weapon & Ammo pickup notifications
+      if (this.player.justPickedWeapon) {
+        this.player.justPickedWeapon = false;
+        this.showToast('🔫 REVÓLVER ENCONTRADO! [Clique com o mouse ou ESPAÇO para atirar. 3 tiros paralisam o monstro!]', 5);
+      }
+      if (this.player.justPickedAmmo) {
+        this.player.justPickedAmmo = false;
+        this.showToast(`💥 +6 Balas encontradas! Total: ${this.player.ammo}`, 3);
+      }
+
       // Update Map animations
       this.map.update(dt);
 
@@ -221,6 +262,37 @@ class Game {
         this.showToast('A ENTIDADE VIU VOCÊ! CORRA!', 3);
         this.screenShake = 0.3;
       }
+
+      // Update Bullets & Collisions
+      for (const bullet of this.bullets) {
+        const hit = bullet.update(dt, this.map);
+        if (hit && hit.hit === 'wall') {
+          this.particles.spawnSparks(hit.x, hit.y, 8, '#f59e0b');
+        }
+
+        // Check hit against enemy
+        if (bullet.active) {
+          const distToEnemy = Math.hypot(bullet.x - this.enemy.x, bullet.y - this.enemy.y);
+          if (distToEnemy < this.enemy.radius + bullet.radius + 6) {
+            bullet.active = false;
+            this.particles.spawnBloodOrMist(bullet.x, bullet.y, 14);
+            const dmg = this.enemy.takeDamage(bullet.angle);
+
+            if (dmg.stunned) {
+              this.audio.playEnemyStunned();
+              this.showToast('⚡ A CRIATURA FOI PARALISADA! APROVEITE PARA ESCAPAR!', 4);
+              this.screenShake = 0.45;
+            } else {
+              this.audio.playEnemyHurt();
+              this.showToast(`🎯 Acerto no monstro! [${dmg.hitsTaken}/${dmg.hitsToStun} tiros para paralisar]`, 2.5);
+            }
+          }
+        }
+      }
+      this.bullets = this.bullets.filter((b) => b.active);
+
+      // Update Particles
+      this.particles.update(dt);
 
       // Update Lighting particles and flicker
       this.lighting.update(dt);
@@ -266,6 +338,24 @@ class Game {
       }
     }
 
+    // Weapon & Ammo Indicator
+    const weaponCard = document.getElementById('weaponHUD');
+    const ammoCountEl = document.getElementById('ammoCount');
+    if (weaponCard && ammoCountEl) {
+      if (this.player.hasWeapon) {
+        weaponCard.classList.add('equipped');
+        ammoCountEl.textContent = `${this.player.ammo} / ${this.player.maxAmmo}`;
+        if (this.player.ammo === 0) {
+          weaponCard.classList.add('empty');
+        } else {
+          weaponCard.classList.remove('empty');
+        }
+      } else {
+        weaponCard.classList.remove('equipped');
+        ammoCountEl.textContent = 'Não Encontrada';
+      }
+    }
+
     // Stamina Bar
     const staminaFill = document.getElementById('staminaFill');
     if (staminaFill) {
@@ -278,13 +368,19 @@ class Game {
       }
     }
 
-    // Danger / Chase Alert Indicator
+    // Danger / Chase / Stun Alert Indicator
     const dangerHUD = document.getElementById('dangerAlert');
-    if (dangerHUD) {
-      if (this.enemy.state === ENEMY_STATE.PERSEGUICAO) {
+    const dangerText = document.getElementById('dangerText');
+    if (dangerHUD && dangerText) {
+      if (this.enemy.state === ENEMY_STATE.ATORDOADO) {
+        dangerHUD.classList.add('active', 'stunned');
+        dangerText.textContent = `⚡ CRIATURA PARALISADA! (${this.enemy.stunTimer.toFixed(1)}s)`;
+      } else if (this.enemy.state === ENEMY_STATE.PERSEGUICAO) {
         dangerHUD.classList.add('active');
+        dangerHUD.classList.remove('stunned');
+        dangerText.textContent = '⚠️ ALERTA: ENTIDADE EM PERSEGUIÇÃO!';
       } else {
-        dangerHUD.classList.remove('active');
+        dangerHUD.classList.remove('active', 'stunned');
       }
     }
   }
@@ -305,16 +401,22 @@ class Game {
     ctx.fillStyle = '#060608';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // 2. Render Map (Floor, Walls, Furniture, Keys, Locked Exit)
+    // 2. Render Map (Floor, Walls, Furniture, Keys, Locked Exit, Weapon, Ammo)
     this.map.render(ctx);
 
     // 3. Render Player
     this.player.render(ctx);
 
-    // 4. Render Enemy
+    // 4. Render Bullets & Particles
+    for (const b of this.bullets) {
+      b.render(ctx);
+    }
+    this.particles.render(ctx);
+
+    // 5. Render Enemy
     this.enemy.render(ctx);
 
-    // 5. Apply Global Darkness & Flashlight Lighting System
+    // 6. Apply Global Darkness & Flashlight Lighting System
     this.lighting.render(ctx, this.player, this.enemy, this.map.keys);
 
     ctx.restore();

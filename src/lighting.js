@@ -24,6 +24,13 @@ export class LightingSystem {
 
     // Admin full lighting toggle
     this.adminLightsOn = false;
+
+    // Muzzle Flash
+    this.muzzleFlash = null;
+  }
+
+  triggerMuzzleFlash(x, y) {
+    this.muzzleFlash = { x, y, timer: 0.09, radius: 420 };
   }
 
   toggleAdminLights() {
@@ -67,6 +74,14 @@ export class LightingSystem {
       if (p.x > this.width) p.x = 0;
       if (p.y < 0) p.y = this.height;
       if (p.y > this.height) p.y = 0;
+    }
+
+    // Muzzle flash decay
+    if (this.muzzleFlash) {
+      this.muzzleFlash.timer -= dt;
+      if (this.muzzleFlash.timer <= 0) {
+        this.muzzleFlash = null;
+      }
     }
   }
 
@@ -177,12 +192,44 @@ export class LightingSystem {
       }
     }
 
+    // D. Muzzle Flash Cutout (Instantly lights up the room!)
+    if (this.muzzleFlash) {
+      const mGrad = ctx.createRadialGradient(
+        this.muzzleFlash.x, this.muzzleFlash.y, 10,
+        this.muzzleFlash.x, this.muzzleFlash.y, this.muzzleFlash.radius
+      );
+      mGrad.addColorStop(0, 'rgba(0, 0, 0, 1.0)');
+      mGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.9)');
+      mGrad.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+      ctx.fillStyle = mGrad;
+      ctx.beginPath();
+      ctx.arc(this.muzzleFlash.x, this.muzzleFlash.y, this.muzzleFlash.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // 3. Draw the darkness mask on top of the main canvas
     mainCtx.save();
     mainCtx.drawImage(this.maskCanvas, 0, 0);
 
     // 4. Volumetric Light Beam Tint (gives the flashlight beam realistic atmospheric haze)
     mainCtx.globalCompositeOperation = 'screen';
+
+    // Muzzle Flash Ambient Flare
+    if (this.muzzleFlash) {
+      const flashGrad = mainCtx.createRadialGradient(
+        this.muzzleFlash.x, this.muzzleFlash.y, 10,
+        this.muzzleFlash.x, this.muzzleFlash.y, this.muzzleFlash.radius
+      );
+      flashGrad.addColorStop(0, 'rgba(255, 245, 210, 0.55)');
+      flashGrad.addColorStop(0.4, 'rgba(251, 191, 36, 0.25)');
+      flashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      mainCtx.fillStyle = flashGrad;
+      mainCtx.beginPath();
+      mainCtx.arc(this.muzzleFlash.x, this.muzzleFlash.y, this.muzzleFlash.radius, 0, Math.PI * 2);
+      ctx.closePath();
+      mainCtx.fill();
+    }
+
     const hazeGrad = mainCtx.createRadialGradient(px, py, 10, px, py, pRange);
     hazeGrad.addColorStop(0, 'rgba(255, 250, 220, 0.08)');
     hazeGrad.addColorStop(0.5, 'rgba(240, 235, 200, 0.03)');

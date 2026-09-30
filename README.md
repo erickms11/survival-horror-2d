@@ -19,6 +19,13 @@ Um jogo de survival horror 2D top-down desenvolvido em **JavaScript puro (ES Mod
 - **Inteligência Artificial do Inimigo (Máquina de Estados FSM):**
   - **`Espera`**: Patrulha em velocidade reduzida pelos cômodos da mansão com olhos em tom âmbar.
   - **`Perseguição`**: Dispara se o sobrevivente entrar no raio de visão (Raycast com linha de visão direta), se aproximar demais ou correr nos tablados. Aumenta a velocidade, emite guincho e busca o jogador implacavelmente.
+  - **`Atordoado`**: Ao ser atingido por 3 tiros do revólver, o monstro fica completamente paralisado (`speed = 0`) por 6 segundos com olhos apagados e estrelas giratórias, permitindo que o jogador escape em segurança!
+
+- **Sistema de Armamento & Combate:**
+  - **Revólver .38**: Localizado no aposento a leste da residência (com 6 projéteis).
+  - **Caixas de Munição**: Espalhadas pela residência para recarregar.
+  - **Balística & Impacto**: Projéteis com rastro luminoso, faíscas em paredes e névoa/sangue ao atingir a criatura.
+  - **Clarão do Disparo (Muzzle Flash)**: Ilumina instantaneamente a sala escura no momento de cada tiro.
 
 - **Objetivo & Escape:**
   - 3 chaves douradas antigas espalhadas pelos cantos da residência.
@@ -34,7 +41,8 @@ Um jogo de survival horror 2D top-down desenvolvido em **JavaScript puro (ES Mod
 | Tecla / Ação | Função |
 | :--- | :--- |
 | **W, A, S, D** ou **Setas** | Movimentação em 4 direções |
-| **Mouse** / **Movimento** | Direcionar feixe da lanterna |
+| **Mouse** / **Movimento** | Direcionar feixe da lanterna e mira |
+| **Clique Esquerdo** / **Espaço** | Atirar (3 tiros paralisam o monstro) |
 | **Shift** | Correr (consome fôlego e faz ruído) |
 | **L** | Modo Administrador (Ligar/Desligar Luzes) |
 | **R** | Reiniciar partida após vitória ou morte |

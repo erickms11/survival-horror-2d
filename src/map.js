@@ -11,16 +11,18 @@ export const TILE = {
   KEY_3: 4,
   EXIT_DOOR: 5,
   OBSTACLE: 6, // Tables, crates, bookshelves
+  WEAPON: 7,   // Antique Revolver
+  AMMO: 8,     // Ammo box
 };
 
 // 24 columns x 18 rows haunted house layout
 // 1 = Solid Wall, 0 = Floor, 6 = Solid Obstacle
 // 2 = Key 1 (Bedroom), 3 = Key 2 (Library), 4 = Key 3 (Basement/Storage)
-// 5 = Exit Door (Foyer)
+// 5 = Exit Door (Foyer), 7 = Revolver (East Room), 8 = Ammo (Central Hall)
 export const MAP_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-  [1, 0, 6, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1, 0, 6, 6, 0, 0, 1],
+  [1, 0, 6, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1, 0, 6, 6, 0, 7, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -29,7 +31,7 @@ export const MAP_GRID = [
   [1, 0, 6, 0, 6, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 6, 0, 0, 6, 0, 0, 1],
   [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-  [1, 0, 6, 6, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 0, 6, 6, 0, 0, 1, 0, 1],
+  [1, 0, 6, 6, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 8, 6, 6, 0, 0, 1, 0, 1],
   [1, 0, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1],
   [1, 0, 0, 0, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 1, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
@@ -57,6 +59,9 @@ export class GameMap {
 
   initMapEntities() {
     this.keys = [];
+    this.weapon = null;
+    this.ammoBoxes = [];
+
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const tile = this.grid[r][c];
@@ -72,6 +77,29 @@ export class GameMap {
             animTimer: Math.random() * Math.PI * 2,
           });
           // Replace key tile with floor so player can step through
+          this.grid[r][c] = TILE.FLOOR;
+        } else if (tile === TILE.WEAPON) {
+          this.weapon = {
+            gridX: c,
+            gridY: r,
+            x: (c + 0.5) * TILE_SIZE,
+            y: (r + 0.5) * TILE_SIZE,
+            collected: false,
+            name: 'Revólver .38',
+            ammo: 6,
+            animTimer: 0,
+          };
+          this.grid[r][c] = TILE.FLOOR;
+        } else if (tile === TILE.AMMO) {
+          this.ammoBoxes.push({
+            gridX: c,
+            gridY: r,
+            x: (c + 0.5) * TILE_SIZE,
+            y: (r + 0.5) * TILE_SIZE,
+            collected: false,
+            amount: 6,
+            animTimer: Math.random() * Math.PI,
+          });
           this.grid[r][c] = TILE.FLOOR;
         } else if (tile === TILE.EXIT_DOOR) {
           this.exitDoor = {
@@ -144,6 +172,14 @@ export class GameMap {
     for (const key of this.keys) {
       if (!key.collected) {
         key.animTimer += dt * 3;
+      }
+    }
+    if (this.weapon && !this.weapon.collected) {
+      this.weapon.animTimer += dt * 3;
+    }
+    for (const ammo of this.ammoBoxes) {
+      if (!ammo.collected) {
+        ammo.animTimer += dt * 3;
       }
     }
   }
@@ -303,6 +339,97 @@ export class GameMap {
         ctx.fillRect(kx + 2, ky - 2, 10, 4);
         ctx.fillRect(kx + 8, ky + 2, 3, 4);
         ctx.fillRect(kx + 11, ky + 2, 2, 3);
+      }
+    }
+
+    // 4. Draw Revolver Weapon on Floor
+    if (this.weapon && !this.weapon.collected) {
+      const floatY = Math.sin(this.weapon.animTimer) * 3;
+      const wx = this.weapon.x;
+      const wy = this.weapon.y + floatY;
+
+      // Cyan / Metallic glint aura
+      const glow = ctx.createRadialGradient(wx, wy, 2, wx, wy, 22);
+      glow.addColorStop(0, 'rgba(147, 197, 253, 0.7)');
+      glow.addColorStop(0.5, 'rgba(59, 130, 246, 0.25)');
+      glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(wx, wy, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(wx, wy);
+
+      // Revolver shape
+      // Barrel
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(0, -3, 14, 4);
+      // Cylinder
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(-4, -5, 6, 8);
+      // Grip (wooden brown)
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.moveTo(-4, -1);
+      ctx.lineTo(-10, 8);
+      ctx.lineTo(-6, 9);
+      ctx.lineTo(-2, 3);
+      ctx.closePath();
+      ctx.fill();
+      // Trigger guard
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-2, 2, 5, 4);
+
+      ctx.restore();
+
+      // Label
+      ctx.fillStyle = '#bfdbfe';
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('REVÓLVER', wx, wy + 18);
+    }
+
+    // 5. Draw Ammo Boxes on Floor
+    for (const ammo of this.ammoBoxes) {
+      if (!ammo.collected) {
+        const floatY = Math.sin(ammo.animTimer) * 2.5;
+        const ax = ammo.x;
+        const ay = ammo.y + floatY;
+
+        // Brass glow
+        const glow = ctx.createRadialGradient(ax, ay, 2, ax, ay, 18);
+        glow.addColorStop(0, 'rgba(251, 191, 36, 0.5)');
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(ax, ay, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(ax, ay);
+
+        // Ammo box crate (olive drab)
+        ctx.fillStyle = '#3f4a36';
+        ctx.fillRect(-8, -6, 16, 12);
+        ctx.strokeStyle = '#22281d';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-8, -6, 16, 12);
+
+        // Brass bullets visible on top
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(-5, -4, 3, 7);
+        ctx.fillRect(-1, -4, 3, 7);
+        ctx.fillRect(3, -4, 3, 7);
+
+        ctx.restore();
+
+        // Label
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('+BALAS', ax, ay + 15);
       }
     }
   }

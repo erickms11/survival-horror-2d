@@ -54,10 +54,19 @@
           </div>
         </div>
 
-        <!-- Danger State Alert Indicator -->
+        <!-- Weapon & Ammo Inventory -->
+        <div id="weaponHUD" class="hud-card weapon-hud" title="Revólver .38">
+          <span class="hud-label">ARMAMENTO</span>
+          <div class="weapon-info">
+            <span class="weapon-name">🔫 Revólver</span>
+            <span id="ammoCount" class="ammo-count">Não Encontrado</span>
+          </div>
+        </div>
+
+        <!-- Danger / Stun State Alert Indicator -->
         <div id="dangerAlert" class="danger-badge">
           <span class="pulse-dot"></span>
-          <span class="danger-text">⚠️ ALERTA: ENTIDADE EM PERSEGUIÇÃO!</span>
+          <span id="dangerText" class="danger-text">⚠️ ALERTA: ENTIDADE EM PERSEGUIÇÃO!</span>
         </div>
 
         <!-- Stamina Meter -->
@@ -87,7 +96,7 @@
           <p class="story-text">
             Você acordou preso no interior de uma residência abandonada. 
             Uma entidade sanguinária vagueia pelos corredores silenciosos. 
-            Explore os aposentos, <strong>encontre as 3 chaves douradas</strong> e alcance o portão norte para escapar.
+            Explore os aposentos, <strong>encontre as 3 chaves douradas</strong>, <strong>arme-se com o revólver</strong> e alcance o portão norte para escapar.
           </p>
 
           <div class="controls-guide">
@@ -97,7 +106,11 @@
             </div>
             <div class="control-item">
               <span class="key-badge">MOUSE</span>
-              <span class="control-label">Direcionar Lanterna</span>
+              <span class="control-label">Direcionar Lanterna e Mira</span>
+            </div>
+            <div class="control-item">
+              <span class="key-badge">CLIQUE ESQ</span><span class="key-badge">ESPAÇO</span>
+              <span class="control-label">Atirar (3 tiros paralisam o monstro!)</span>
             </div>
             <div class="control-item">
               <span class="key-badge">SHIFT</span>

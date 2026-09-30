@@ -239,6 +239,53 @@ body {
   color: var(--accent-gold);
 }
 
+/* Weapon HUD */
+.weapon-hud {
+  align-self: flex-start;
+  margin-top: 6px;
+  min-width: 170px;
+  transition: all 0.3s ease;
+  border-color: rgba(255, 255, 255, 0.1);
+  opacity: 0.7;
+}
+
+.weapon-hud.equipped {
+  opacity: 1;
+  border-color: rgba(147, 197, 253, 0.5);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.3);
+}
+
+.weapon-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.weapon-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.ammo-count {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.weapon-hud.empty .ammo-count {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
 /* Danger Alert Badge */
 .danger-badge {
   position: absolute;
@@ -262,6 +309,19 @@ body {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
   animation: pulseDanger 1.2s infinite;
+}
+
+.danger-badge.stunned {
+  background: rgba(14, 116, 144, 0.9);
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.8);
+  animation: pulseStun 1.0s infinite;
+}
+
+@keyframes pulseStun {
+  0% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+  50% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.95); }
+  100% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
 }
 
 @keyframes pulseDanger {

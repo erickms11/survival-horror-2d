@@ -1,4 +1,5 @@
 // src/player.js - Player Entity with 4-Direction WASD, Collision, and Flashlight
+import { Bullet } from './bullet.js';
 
 export class Player {
   constructor(x, y) {
@@ -20,8 +21,16 @@ export class Player {
     this.maxStamina = 100;
     this.isSprinting = false;
 
-    // Inventory
+    // Inventory & Equipment
     this.keys = new Set();
+    this.hasWeapon = false;
+    this.ammo = 0;
+    this.maxAmmo = 6;
+    this.shootCooldown = 0;
+    this.shootCooldownMax = 0.4;
+    this.justPickedWeapon = false;
+    this.justPickedAmmo = false;
+
     this.escaped = false;
     this.isAlive = true;
 
@@ -37,12 +46,47 @@ export class Player {
     this.y = y;
     this.stamina = this.maxStamina;
     this.keys.clear();
+    this.hasWeapon = false;
+    this.ammo = 0;
+    this.shootCooldown = 0;
+    this.justPickedWeapon = false;
+    this.justPickedAmmo = false;
     this.escaped = false;
     this.isAlive = true;
     this.vx = 0;
     this.vy = 0;
     this.angle = 0;
     this.flashlightAngle = 0;
+  }
+
+  shoot() {
+    if (!this.isAlive || this.escaped) return null;
+    if (!this.hasWeapon) return null;
+    if (this.shootCooldown > 0) return null;
+
+    if (this.ammo <= 0) {
+      this.shootCooldown = 0.3;
+      return { dryClick: true };
+    }
+
+    this.ammo--;
+    this.shootCooldown = this.shootCooldownMax;
+
+    // Calculate muzzle coordinates (gun held in right hand)
+    const forwardX = Math.cos(this.flashlightAngle);
+    const forwardY = Math.sin(this.flashlightAngle);
+    const rightX = -Math.sin(this.flashlightAngle);
+    const rightY = Math.cos(this.flashlightAngle);
+
+    const muzzleX = this.x + forwardX * 22 + rightX * 6;
+    const muzzleY = this.y + forwardY * 22 + rightY * 6;
+
+    const bullet = new Bullet(muzzleX, muzzleY, this.flashlightAngle);
+    return {
+      bullet,
+      muzzleX,
+      muzzleY,
+    };
   }
 
   handleInput(input, mousePos) {
@@ -116,6 +160,11 @@ export class Player {
       }
     }
 
+    // Cooldown decrement
+    if (this.shootCooldown > 0) {
+      this.shootCooldown = Math.max(0, this.shootCooldown - dt);
+    }
+
     // Collision detection with sliding on X and Y axes independently
     const nextX = this.x + this.vx * dt;
     const nextY = this.y + this.vy * dt;
@@ -148,6 +197,33 @@ export class Player {
       }
     }
 
+    // Check weapon pickup
+    if (map.weapon && !map.weapon.collected) {
+      const dist = Math.hypot(this.x - map.weapon.x, this.y - map.weapon.y);
+      if (dist < this.radius + 18) {
+        map.weapon.collected = true;
+        this.hasWeapon = true;
+        this.ammo = map.weapon.ammo || 6;
+        this.justPickedWeapon = true;
+        if (audio) audio.playKeyPickup();
+      }
+    }
+
+    // Check ammo box pickups
+    if (map.ammoBoxes) {
+      for (const box of map.ammoBoxes) {
+        if (!box.collected) {
+          const dist = Math.hypot(this.x - box.x, this.y - box.y);
+          if (dist < this.radius + 16) {
+            box.collected = true;
+            this.ammo = Math.min(this.maxAmmo * 2, this.ammo + box.amount);
+            this.justPickedAmmo = true;
+            if (audio) audio.playKeyPickup();
+          }
+        }
+      }
+    }
+
     // Check exit door collision / win condition
     if (map.exitDoor && map.exitDoor.isOpen) {
       const exitDist = Math.hypot(this.x - map.exitDoor.x, this.y - map.exitDoor.y);
@@ -168,11 +244,28 @@ export class Player {
     // Subtle walk bobbing
     const bob = this.isMoving ? Math.sin(this.walkAnimTimer) * 2 : 0;
 
-    // Flashlight casing held in right hand
-    ctx.fillStyle = '#6b7280';
-    ctx.fillRect(8, 6, 12, 5);
+    // Flashlight casing held in left hand
+    ctx.fillStyle = '#4b5563';
+    ctx.fillRect(8, -9, 10, 4);
     ctx.fillStyle = '#fef08a';
-    ctx.fillRect(19, 6, 3, 5);
+    ctx.fillRect(17, -9, 2.5, 4);
+
+    // If weapon equipped, draw revolver in right hand
+    if (this.hasWeapon) {
+      // Gun barrel
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(10, 5, 12, 3);
+      // Gun cylinder
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(6, 4, 5, 5);
+      // Gun grip
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(3, 7, 4, 5);
+    } else {
+      // Flashlight right hand accessory
+      ctx.fillStyle = '#6b7280';
+      ctx.fillRect(8, 6, 8, 4);
+    }
 
     // Hands
     ctx.fillStyle = '#fbcfe8';

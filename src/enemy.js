@@ -1,8 +1,9 @@
-// src/enemy.js - Enemy Entity with Finite State Machine ('Espera' and 'Perseguição')
+// src/enemy.js - Enemy Entity with Finite State Machine ('Espera', 'Perseguição', and 'Atordoado')
 
 export const ENEMY_STATE = {
   ESPERA: 'Espera',
   PERSEGUICAO: 'Perseguição',
+  ATORDOADO: 'Atordoado',
 };
 
 export class Enemy {
@@ -27,6 +28,13 @@ export class Enemy {
     this.hearingRadius = 140; // Can hear player sprinting
     this.loseTargetTimer = 0;
     this.loseTargetDuration = 3.5; // Seconds without LOS before returning to 'Espera'
+
+    // Damage & Stun System (Gun does not kill, only stuns after 3 shots!)
+    this.hitsTaken = 0;
+    this.hitsToStun = 3;
+    this.stunDuration = 6.0; // Seconds paralyzed
+    this.stunTimer = 0;
+    this.hurtFlashTimer = 0;
 
     // Patrol waypoints in the house
     this.patrolPoints = [
@@ -53,10 +61,70 @@ export class Enemy {
     this.loseTargetTimer = 0;
     this.idleWaitTimer = 0;
     this.currentPatrolIndex = 0;
+    this.hitsTaken = 0;
+    this.stunTimer = 0;
+    this.hurtFlashTimer = 0;
+  }
+
+  takeDamage(bulletAngle = 0) {
+    this.hitsTaken++;
+    this.hurtFlashTimer = 0.22;
+
+    // Small recoil knockback away from bullet
+    this.x += Math.cos(bulletAngle) * 10;
+    this.y += Math.sin(bulletAngle) * 10;
+
+    // If asleep/patrolling, taking a hit alerts the monster into chase
+    if (this.state === ENEMY_STATE.ESPERA) {
+      this.state = ENEMY_STATE.PERSEGUICAO;
+    }
+
+    // Check if stun threshold is reached
+    if (this.hitsTaken >= this.hitsToStun) {
+      this.state = ENEMY_STATE.ATORDOADO;
+      this.stunTimer = this.stunDuration;
+      this.speed = 0;
+      return { stunned: true, hitsTaken: this.hitsTaken, hitsToStun: this.hitsToStun };
+    }
+
+    return { stunned: false, hitsTaken: this.hitsTaken, hitsToStun: this.hitsToStun };
   }
 
   update(dt, player, map, audio) {
     if (!player.isAlive || player.escaped) return;
+
+    if (this.hurtFlashTimer > 0) {
+      this.hurtFlashTimer -= dt;
+    }
+
+    // ==========================================
+    // Stunned State Handler
+    // ==========================================
+    if (this.state === ENEMY_STATE.ATORDOADO) {
+      this.speed = 0;
+      this.stunTimer -= dt;
+
+      if (this.stunTimer <= 0) {
+        // Monster recovers from paralysis!
+        this.hitsTaken = 0;
+        const dist = Math.hypot(player.x - this.x, player.y - this.y);
+        const hasLOS = map.hasLineOfSight(this.x, this.y, player.x, player.y);
+
+        if (hasLOS && dist < this.detectionRadius) {
+          this.state = ENEMY_STATE.PERSEGUICAO;
+          if (audio) {
+            audio.playEnemyAlert();
+            audio.setHeartbeatRate('fast');
+          }
+        } else {
+          this.state = ENEMY_STATE.ESPERA;
+          if (audio) {
+            audio.setHeartbeatRate('slow');
+          }
+        }
+      }
+      return; // Cannot move or attack while paralyzed!
+    }
 
     this.animTimer += dt * 4;
     this.eyePulseTimer += dt * 6;
@@ -168,14 +236,34 @@ export class Enemy {
 
   render(ctx) {
     ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
 
+    const isStunned = this.state === ENEMY_STATE.ATORDOADO;
     const isChasing = this.state === ENEMY_STATE.PERSEGUICAO;
+
+    // Slight shiver when stunned or hurt
+    let renderX = this.x;
+    let renderY = this.y;
+    if (isStunned || this.hurtFlashTimer > 0) {
+      renderX += (Math.random() - 0.5) * 4;
+      renderY += (Math.random() - 0.5) * 4;
+    }
+
+    ctx.translate(renderX, renderY);
+    ctx.rotate(this.angle);
 
     // Dark shadowy mist body
     const shadowGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, this.radius + 6);
-    if (isChasing) {
+    if (this.hurtFlashTimer > 0) {
+      // Hurt flash
+      shadowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      shadowGrad.addColorStop(0.7, 'rgba(239, 68, 68, 0.85)');
+      shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    } else if (isStunned) {
+      // Stunned faded blue/gray
+      shadowGrad.addColorStop(0, 'rgba(30, 41, 59, 0.9)');
+      shadowGrad.addColorStop(0.7, 'rgba(15, 23, 42, 0.8)');
+      shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    } else if (isChasing) {
       shadowGrad.addColorStop(0, 'rgba(40, 5, 5, 0.95)');
       shadowGrad.addColorStop(0.7, 'rgba(20, 2, 2, 0.85)');
       shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -191,41 +279,97 @@ export class Enemy {
     ctx.fill();
 
     // Creepy jagged cloak / shroud
-    ctx.fillStyle = isChasing ? '#180505' : '#0e0e12';
+    ctx.fillStyle = this.hurtFlashTimer > 0 ? '#fee2e2' : (isStunned ? '#1e293b' : (isChasing ? '#180505' : '#0e0e12'));
     ctx.beginPath();
     ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Claws / Arms outstretched when chasing
-    if (isChasing) {
+    if (isChasing && !isStunned) {
       ctx.fillStyle = '#2b0909';
       ctx.beginPath();
-      // Left claw
       ctx.arc(12, -9, 4, 0, Math.PI * 2);
-      // Right claw
       ctx.arc(12, 9, 4, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Menacing glowing eyes
-    const eyePulse = Math.sin(this.eyePulseTimer) * 0.3 + 0.7;
-    const eyeColor = isChasing ? `rgba(239, 68, 68, ${eyePulse})` : 'rgba(245, 158, 11, 0.85)';
-    const eyeGlowColor = isChasing ? 'rgba(220, 38, 38, 0.6)' : 'rgba(217, 119, 6, 0.4)';
+    // Eyes
+    if (isStunned) {
+      // Glazed pale gray eyes
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+      ctx.beginPath();
+      ctx.arc(8, -5, 2, 0, Math.PI * 2);
+      ctx.arc(8, 5, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Menacing glowing eyes
+      const eyePulse = Math.sin(this.eyePulseTimer) * 0.3 + 0.7;
+      const eyeColor = isChasing ? `rgba(239, 68, 68, ${eyePulse})` : 'rgba(245, 158, 11, 0.85)';
+      const eyeGlowColor = isChasing ? 'rgba(220, 38, 38, 0.6)' : 'rgba(217, 119, 6, 0.4)';
 
-    // Eye glow aura
-    ctx.fillStyle = eyeGlowColor;
-    ctx.beginPath();
-    ctx.arc(8, -5, 4.5, 0, Math.PI * 2);
-    ctx.arc(8, 5, 4.5, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = eyeGlowColor;
+      ctx.beginPath();
+      ctx.arc(8, -5, 4.5, 0, Math.PI * 2);
+      ctx.arc(8, 5, 4.5, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Sharp glowing pupils
-    ctx.fillStyle = eyeColor;
-    ctx.beginPath();
-    ctx.arc(8, -5, 2, 0, Math.PI * 2);
-    ctx.arc(8, 5, 2, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = eyeColor;
+      ctx.beginPath();
+      ctx.arc(8, -5, 2, 0, Math.PI * 2);
+      ctx.arc(8, 5, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
+
+    // Stunned spinning stars / badge above enemy head
+    if (isStunned) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      // Rotating stars
+      const starTime = performance.now() / 250;
+      for (let i = 0; i < 3; i++) {
+        const starAng = starTime + (i * Math.PI * 2) / 3;
+        const sx = Math.cos(starAng) * 20;
+        const sy = Math.sin(starAng) * 8 - 14;
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Paralyzed badge
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(-45, -34, 90, 16);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-45, -34, 90, 16);
+
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`PARALISADO ${this.stunTimer.toFixed(1)}s`, 0, -22);
+
+      ctx.restore();
+    } else if (this.hitsTaken > 0) {
+      // Show hit counter pips above enemy (e.g. 1/3, 2/3)
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      ctx.fillStyle = 'rgba(15, 15, 20, 0.85)';
+      ctx.fillRect(-20, -26, 40, 10);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-20, -26, 40, 10);
+
+      // Fill pips
+      for (let i = 0; i < this.hitsToStun; i++) {
+        ctx.fillStyle = i < this.hitsTaken ? '#ef4444' : '#374151';
+        ctx.fillRect(-17 + i * 13, -24, 8, 6);
+      }
+
+      ctx.restore();
+    }
   }
 }

@@ -271,4 +271,131 @@ export class SoundManager {
       osc.stop(t + 2.6);
     });
   }
+
+  playGunshot() {
+    if (!this.ctx || this.isMuted) return;
+
+    const t = this.ctx.currentTime;
+
+    // 1. Low frequency thump (body of the shot)
+    const kick = this.ctx.createOscillator();
+    const kickGain = this.ctx.createGain();
+    kick.type = 'triangle';
+    kick.frequency.setValueAtTime(160, t);
+    kick.frequency.exponentialRampToValueAtTime(35, t + 0.18);
+    kickGain.gain.setValueAtTime(0.5, t);
+    kickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    kick.connect(kickGain);
+    kickGain.connect(this.ctx.destination);
+    kick.start(t);
+    kick.stop(t + 0.25);
+
+    // 2. High frequency sharp explosion crack (gunpowder noise)
+    const bufferSize = this.ctx.sampleRate * 0.28;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.05));
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1400, t);
+    filter.frequency.exponentialRampToValueAtTime(300, t + 0.25);
+    filter.Q.setValueAtTime(1.5, t);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.4, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+
+    noise.start(t);
+  }
+
+  playEmptyClick() {
+    if (!this.ctx || this.isMuted) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1800, t);
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.04);
+
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.05);
+  }
+
+  playEnemyHurt() {
+    if (!this.ctx || this.isMuted) return;
+
+    const t = this.ctx.currentTime;
+    // Screech of pain
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(450, t);
+    osc.frequency.linearRampToValueAtTime(750, t + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(200, t + 0.25);
+
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+
+  playEnemyStunned() {
+    if (!this.ctx || this.isMuted) return;
+
+    const t = this.ctx.currentTime;
+    // Heavy collapse thud + dizzy electric ring
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.6);
+
+    oscGain.gain.setValueAtTime(0.4, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.7);
+
+    // High ringing stun pitch
+    const ring = this.ctx.createOscillator();
+    const ringGain = this.ctx.createGain();
+    ring.type = 'sine';
+    ring.frequency.setValueAtTime(2400, t + 0.1);
+    ring.frequency.linearRampToValueAtTime(1800, t + 1.2);
+
+    ringGain.gain.setValueAtTime(0.08, t + 0.1);
+    ringGain.gain.exponentialRampToValueAtTime(0.001, t + 1.3);
+
+    ring.connect(ringGain);
+    ringGain.connect(this.ctx.destination);
+
+    ring.start(t + 0.1);
+    ring.stop(t + 1.3);
+  }
 }
