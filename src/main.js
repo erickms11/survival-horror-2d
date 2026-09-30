@@ -54,6 +54,9 @@ class Game {
     this.notificationText = 'Encontre as 3 chaves para destravar o portão.';
     this.notificationTimer = 5;
 
+    // Difficulty trigger: 3rd key triggers relentless enraged chase!
+    this.thirdKeyTriggered = false;
+
     // Time tracking
     this.lastTime = performance.now();
     this.startTime = 0;
@@ -173,6 +176,7 @@ class Game {
     this.audio.resume();
     this.gameState = 'PLAYING';
     this.startTime = performance.now();
+    this.thirdKeyTriggered = false;
     this.showToast('Você está preso na residência. Encontre as 3 chaves douradas!');
 
     const titleScreen = document.getElementById('titleScreen');
@@ -187,6 +191,7 @@ class Game {
     this.map = new GameMap();
     this.player.reset(this.map.playerSpawn.x, this.map.playerSpawn.y);
     this.enemy.reset(this.map.enemySpawn.x, this.map.enemySpawn.y);
+    this.thirdKeyTriggered = false;
     this.bullets = [];
     this.particles = new ParticleSystem();
     this.audio.setHeartbeatRate('slow');
@@ -231,13 +236,21 @@ class Game {
       this.player.handleInput(this.input, this.input.mouse);
       this.player.update(dt, this.map, this.audio);
 
-      // Handle Key pickup notifications
+      // Handle Key pickup notifications & 3rd Key Enraged Chase Trigger
       if (this.player.keys.size > prevKeyCount) {
         const count = this.player.keys.size;
         if (count < 3) {
           this.showToast(`Chave encontrada! (${count}/3 chaves coletadas)`);
-        } else {
-          this.showToast('Todas as 3 chaves reunidas! O portão da saída foi DESTRAVADO!', 6);
+        } else if (count === 3 && !this.thirdKeyTriggered) {
+          this.thirdKeyTriggered = true;
+          // Trigger Enraged Monster Pursuit!
+          this.enemy.enraged = true;
+          this.enemy.state = ENEMY_STATE.PERSEGUICAO;
+          this.enemy.stunTimer = 0;
+          this.audio.playEnemyAlert();
+          this.audio.setHeartbeatRate('fast');
+          this.screenShake = 0.65;
+          this.showToast('🚨 PERIGO MÁXIMO! Você pegou a 3ª chave e a CRIATURA ENTROU EM FÚRIA TOTAL! CORRA PARA O PORTÃO!', 7);
         }
       }
 
@@ -374,13 +387,18 @@ class Game {
     if (dangerHUD && dangerText) {
       if (this.enemy.state === ENEMY_STATE.ATORDOADO) {
         dangerHUD.classList.add('active', 'stunned');
+        dangerHUD.classList.remove('enraged');
         dangerText.textContent = `⚡ CRIATURA PARALISADA! (${this.enemy.stunTimer.toFixed(1)}s)`;
+      } else if (this.enemy.enraged) {
+        dangerHUD.classList.add('active', 'enraged');
+        dangerHUD.classList.remove('stunned');
+        dangerText.textContent = '🚨 FÚRIA TOTAL: A CRIATURA ESTÁ CAÇANDO VOCÊ!';
       } else if (this.enemy.state === ENEMY_STATE.PERSEGUICAO) {
         dangerHUD.classList.add('active');
-        dangerHUD.classList.remove('stunned');
+        dangerHUD.classList.remove('stunned', 'enraged');
         dangerText.textContent = '⚠️ ALERTA: ENTIDADE EM PERSEGUIÇÃO!';
       } else {
-        dangerHUD.classList.remove('active', 'stunned');
+        dangerHUD.classList.remove('active', 'stunned', 'enraged');
       }
     }
   }

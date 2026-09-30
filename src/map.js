@@ -17,8 +17,8 @@ export const TILE = {
 
 // 24 columns x 18 rows haunted house layout
 // 1 = Solid Wall, 0 = Floor, 6 = Solid Obstacle
-// 2 = Key 1 (Bedroom), 3 = Key 2 (Library), 4 = Key 3 (Basement/Storage)
 // 5 = Exit Door (Foyer), 7 = Revolver (East Room), 8 = Ammo (Central Hall)
+// Keys and Enemy spawn randomly from pools of valid room locations!
 export const MAP_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
@@ -27,17 +27,43 @@ export const MAP_GRID = [
   [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 0, 6, 0, 6, 0, 1, 0, 6, 6, 0, 0, 6, 6, 0, 1, 0, 6, 0, 0, 6, 0, 0, 1],
-  [1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 0, 6, 0, 6, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 6, 0, 0, 6, 0, 0, 1],
   [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
   [1, 0, 6, 6, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 8, 6, 6, 0, 0, 1, 0, 1],
-  [1, 0, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1],
+  [1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1],
   [1, 0, 0, 0, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 1, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 0, 6, 0, 0, 6, 0, 0, 6, 0, 0, 0, 0, 0, 6, 0, 0, 6, 0, 0, 6, 0, 0, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+];
+
+// Pool of 12 atmospheric spawn spots for keys across all wings
+export const KEY_SPAWN_LOCATIONS = [
+  { col: 3, row: 7, name: 'Quarto Noroeste' },
+  { col: 2, row: 3, name: 'Aposento Superior Oeste' },
+  { col: 3, row: 12, name: 'Biblioteca Antiga' },
+  { col: 6, row: 13, name: 'Depósito Oeste' },
+  { col: 21, row: 2, name: 'Quarto Nordeste' },
+  { col: 21, row: 7, name: 'Sala de Estar Leste' },
+  { col: 21, row: 15, name: 'Porão Sombrio' },
+  { col: 18, row: 16, name: 'Adega Subterrânea' },
+  { col: 11, row: 15, name: 'Corredor Sul' },
+  { col: 12, row: 12, name: 'Armazém Central' },
+  { col: 6, row: 5, name: 'Ala Oeste' },
+  { col: 16, row: 5, name: 'Ala Leste' },
+];
+
+// Pool of 6 eerie spawn spots for the enemy far from player spawn
+export const ENEMY_SPAWN_LOCATIONS = [
+  { col: 17.5, row: 12.5, name: 'Aposento Leste' },
+  { col: 3.5, row: 13.5, name: 'Santuário da Biblioteca' },
+  { col: 21.5, row: 15.5, name: 'Fundo do Porão' },
+  { col: 11.5, row: 15.5, name: 'Catacumbas do Sul' },
+  { col: 20.5, row: 7.5, name: 'Sala dos Espelhos' },
+  { col: 3.5, row: 5.5, name: 'Corredor Oeste' },
 ];
 
 export class GameMap {
@@ -62,23 +88,35 @@ export class GameMap {
     this.weapon = null;
     this.ammoBoxes = [];
 
+    // 1. Pick a random spawn spot for the Enemy from the eerie locations pool
+    const randEnemyLoc = ENEMY_SPAWN_LOCATIONS[Math.floor(Math.random() * ENEMY_SPAWN_LOCATIONS.length)];
+    this.enemySpawn = {
+      x: randEnemyLoc.col * TILE_SIZE,
+      y: randEnemyLoc.row * TILE_SIZE,
+      name: randEnemyLoc.name,
+    };
+
+    // 2. Pick 3 distinct random spawn spots for the Keys from the pool
+    const shuffledKeys = [...KEY_SPAWN_LOCATIONS].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < 3; i++) {
+      const loc = shuffledKeys[i];
+      this.keys.push({
+        id: i + 1,
+        locationName: loc.name,
+        gridX: loc.col,
+        gridY: loc.row,
+        x: (loc.col + 0.5) * TILE_SIZE,
+        y: (loc.row + 0.5) * TILE_SIZE,
+        collected: false,
+        animTimer: Math.random() * Math.PI * 2,
+      });
+    }
+
+    // 3. Scan grid for static elements (Exit door, weapon, ammo)
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const tile = this.grid[r][c];
-        if (tile >= TILE.KEY_1 && tile <= TILE.KEY_3) {
-          const keyId = tile - TILE.KEY_1 + 1;
-          this.keys.push({
-            id: keyId,
-            gridX: c,
-            gridY: r,
-            x: (c + 0.5) * TILE_SIZE,
-            y: (r + 0.5) * TILE_SIZE,
-            collected: false,
-            animTimer: Math.random() * Math.PI * 2,
-          });
-          // Replace key tile with floor so player can step through
-          this.grid[r][c] = TILE.FLOOR;
-        } else if (tile === TILE.WEAPON) {
+        if (tile === TILE.WEAPON) {
           this.weapon = {
             gridX: c,
             gridY: r,

@@ -51,12 +51,18 @@ export class Enemy {
     // Visual anim
     this.animTimer = 0;
     this.eyePulseTimer = 0;
+
+    // Enraged Mode (Triggered when player picks up the 3rd key)
+    this.enraged = false;
   }
 
   reset(x, y) {
-    this.x = x ?? this.startX;
-    this.y = y ?? this.startY;
+    if (x !== undefined) this.startX = x;
+    if (y !== undefined) this.startY = y;
+    this.x = this.startX;
+    this.y = this.startY;
     this.state = ENEMY_STATE.ESPERA;
+    this.enraged = false;
     this.speed = this.patrolSpeed;
     this.loseTargetTimer = 0;
     this.idleWaitTimer = 0;
@@ -107,19 +113,28 @@ export class Enemy {
       if (this.stunTimer <= 0) {
         // Monster recovers from paralysis!
         this.hitsTaken = 0;
-        const dist = Math.hypot(player.x - this.x, player.y - this.y);
-        const hasLOS = map.hasLineOfSight(this.x, this.y, player.x, player.y);
-
-        if (hasLOS && dist < this.detectionRadius) {
+        if (this.enraged) {
           this.state = ENEMY_STATE.PERSEGUICAO;
+          this.speed = this.chaseSpeed * 1.18;
           if (audio) {
             audio.playEnemyAlert();
             audio.setHeartbeatRate('fast');
           }
         } else {
-          this.state = ENEMY_STATE.ESPERA;
-          if (audio) {
-            audio.setHeartbeatRate('slow');
+          const dist = Math.hypot(player.x - this.x, player.y - this.y);
+          const hasLOS = map.hasLineOfSight(this.x, this.y, player.x, player.y);
+
+          if (hasLOS && dist < this.detectionRadius) {
+            this.state = ENEMY_STATE.PERSEGUICAO;
+            if (audio) {
+              audio.playEnemyAlert();
+              audio.setHeartbeatRate('fast');
+            }
+          } else {
+            this.state = ENEMY_STATE.ESPERA;
+            if (audio) {
+              audio.setHeartbeatRate('slow');
+            }
           }
         }
       }
@@ -135,7 +150,12 @@ export class Enemy {
     // ==========================================
     // State Machine Transitions
     // ==========================================
-    if (this.state === ENEMY_STATE.ESPERA) {
+    if (this.enraged) {
+      // Relentless pursuit when enraged: never calms down and tracks faster!
+      this.state = ENEMY_STATE.PERSEGUICAO;
+      this.speed = this.chaseSpeed * 1.18;
+      this.loseTargetTimer = 0;
+    } else if (this.state === ENEMY_STATE.ESPERA) {
       this.speed = this.patrolSpeed;
 
       // Condition 1: Player in direct line of sight within detection radius
@@ -263,6 +283,11 @@ export class Enemy {
       shadowGrad.addColorStop(0, 'rgba(30, 41, 59, 0.9)');
       shadowGrad.addColorStop(0.7, 'rgba(15, 23, 42, 0.8)');
       shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    } else if (this.enraged) {
+      // Fiery crimson blood aura when enraged
+      shadowGrad.addColorStop(0, 'rgba(140, 10, 20, 0.98)');
+      shadowGrad.addColorStop(0.6, 'rgba(70, 5, 10, 0.9)');
+      shadowGrad.addColorStop(1, 'rgba(255, 0, 40, 0)');
     } else if (isChasing) {
       shadowGrad.addColorStop(0, 'rgba(40, 5, 5, 0.95)');
       shadowGrad.addColorStop(0.7, 'rgba(20, 2, 2, 0.85)');
@@ -279,14 +304,14 @@ export class Enemy {
     ctx.fill();
 
     // Creepy jagged cloak / shroud
-    ctx.fillStyle = this.hurtFlashTimer > 0 ? '#fee2e2' : (isStunned ? '#1e293b' : (isChasing ? '#180505' : '#0e0e12'));
+    ctx.fillStyle = this.hurtFlashTimer > 0 ? '#fee2e2' : (isStunned ? '#1e293b' : (this.enraged ? '#2a0408' : (isChasing ? '#180505' : '#0e0e12')));
     ctx.beginPath();
     ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Claws / Arms outstretched when chasing
-    if (isChasing && !isStunned) {
-      ctx.fillStyle = '#2b0909';
+    // Claws / Arms outstretched when chasing or enraged
+    if ((isChasing || this.enraged) && !isStunned) {
+      ctx.fillStyle = this.enraged ? '#580808' : '#2b0909';
       ctx.beginPath();
       ctx.arc(12, -9, 4, 0, Math.PI * 2);
       ctx.arc(12, 9, 4, 0, Math.PI * 2);
@@ -302,15 +327,19 @@ export class Enemy {
       ctx.arc(8, 5, 2, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      // Menacing glowing eyes
+      // Menacing glowing eyes (Blood red and blazing when enraged)
       const eyePulse = Math.sin(this.eyePulseTimer) * 0.3 + 0.7;
-      const eyeColor = isChasing ? `rgba(239, 68, 68, ${eyePulse})` : 'rgba(245, 158, 11, 0.85)';
-      const eyeGlowColor = isChasing ? 'rgba(220, 38, 38, 0.6)' : 'rgba(217, 119, 6, 0.4)';
+      const eyeColor = this.enraged
+        ? `rgba(255, 30, 70, ${eyePulse})`
+        : (isChasing ? `rgba(239, 68, 68, ${eyePulse})` : 'rgba(245, 158, 11, 0.85)');
+      const eyeGlowColor = this.enraged
+        ? 'rgba(255, 0, 60, 0.8)'
+        : (isChasing ? 'rgba(220, 38, 38, 0.6)' : 'rgba(217, 119, 6, 0.4)');
 
       ctx.fillStyle = eyeGlowColor;
       ctx.beginPath();
-      ctx.arc(8, -5, 4.5, 0, Math.PI * 2);
-      ctx.arc(8, 5, 4.5, 0, Math.PI * 2);
+      ctx.arc(8, -5, this.enraged ? 5.5 : 4.5, 0, Math.PI * 2);
+      ctx.arc(8, 5, this.enraged ? 5.5 : 4.5, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = eyeColor;
@@ -352,24 +381,46 @@ export class Enemy {
       ctx.fillText(`PARALISADO ${this.stunTimer.toFixed(1)}s`, 0, -22);
 
       ctx.restore();
-    } else if (this.hitsTaken > 0) {
-      // Show hit counter pips above enemy (e.g. 1/3, 2/3)
-      ctx.save();
-      ctx.translate(this.x, this.y);
+    } else {
+      // If enraged and not stunned, display pulsating FÚRIA badge
+      if (this.enraged) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
 
-      ctx.fillStyle = 'rgba(15, 15, 20, 0.85)';
-      ctx.fillRect(-20, -26, 40, 10);
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(-20, -26, 40, 10);
+        ctx.fillStyle = 'rgba(180, 10, 30, 0.9)';
+        ctx.fillRect(-36, -34, 72, 16);
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-36, -34, 72, 16);
 
-      // Fill pips
-      for (let i = 0; i < this.hitsToStun; i++) {
-        ctx.fillStyle = i < this.hitsTaken ? '#ef4444' : '#374151';
-        ctx.fillRect(-17 + i * 13, -24, 8, 6);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 8.5px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔥 EM FÚRIA 🔥', 0, -23);
+
+        ctx.restore();
       }
 
-      ctx.restore();
+      // Show hit counter pips above enemy if damaged
+      if (this.hitsTaken > 0) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        const pipY = this.enraged ? -48 : -26;
+        ctx.fillStyle = 'rgba(15, 15, 20, 0.85)';
+        ctx.fillRect(-20, pipY, 40, 10);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-20, pipY, 40, 10);
+
+        // Fill pips
+        for (let i = 0; i < this.hitsToStun; i++) {
+          ctx.fillStyle = i < this.hitsTaken ? '#ef4444' : '#374151';
+          ctx.fillRect(-17 + i * 13, pipY + 2, 8, 6);
+        }
+
+        ctx.restore();
+      }
     }
   }
 }

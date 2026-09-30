@@ -318,6 +318,19 @@ body {
   animation: pulseStun 1.0s infinite;
 }
 
+.danger-badge.enraged {
+  background: rgba(190, 18, 60, 0.95);
+  border-color: #f43f5e;
+  box-shadow: 0 0 30px rgba(244, 63, 94, 0.9);
+  animation: pulseEnraged 0.65s infinite ease-in-out;
+}
+
+@keyframes pulseEnraged {
+  0% { box-shadow: 0 0 14px rgba(244, 63, 94, 0.6); transform: translateX(-50%) translateY(0) scale(1); }
+  50% { box-shadow: 0 0 38px rgba(244, 63, 94, 1); transform: translateX(-50%) translateY(0) scale(1.05); }
+  100% { box-shadow: 0 0 14px rgba(244, 63, 94, 0.6); transform: translateX(-50%) translateY(0) scale(1); }
+}
+
 @keyframes pulseStun {
   0% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
   50% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.95); }
