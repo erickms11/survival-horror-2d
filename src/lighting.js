@@ -164,9 +164,9 @@ export class LightingSystem {
 
     const ctx = this.maskCtx;
 
-    // 1. Reset darkness mask to pitch black (reduced during lightning so the mansion is revealed!)
+    // 1. Reset darkness mask to pitch black (reduced dramatically during lightning to reveal the mansion!)
     ctx.globalCompositeOperation = 'source-over';
-    const darkAlpha = Math.max(0.18, 0.985 - this.lightningIntensity * 0.8);
+    const darkAlpha = Math.max(0.08, 0.985 - this.lightningIntensity * 0.9);
     ctx.fillStyle = `rgba(2, 2, 4, ${darkAlpha})`;
     ctx.fillRect(0, 0, this.width, this.height);
 
@@ -337,15 +337,15 @@ export class LightingSystem {
     mainCtx.fillStyle = vignetteGrad;
     mainCtx.fillRect(0, 0, this.width, this.height);
 
+    mainCtx.restore();
+
     // 7. Fullscreen Atmospheric Lightning Flash (pale stormy blue moonlight tint)
     if (this.lightningIntensity > 0) {
       mainCtx.save();
       mainCtx.globalCompositeOperation = 'screen';
-      mainCtx.fillStyle = `rgba(180, 215, 255, ${this.lightningIntensity * 0.42})`;
+      mainCtx.fillStyle = `rgba(215, 235, 255, ${this.lightningIntensity * 0.65})`;
       mainCtx.fillRect(0, 0, this.width, this.height);
       mainCtx.restore();
     }
-
-    mainCtx.restore();
   }
 }

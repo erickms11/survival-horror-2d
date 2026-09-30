@@ -90,6 +90,16 @@ class Game {
       adminLightsBtn.addEventListener('click', () => this.toggleAdminLights());
     }
 
+    const thunderBtn = document.getElementById('thunderBtn');
+    if (thunderBtn) {
+      thunderBtn.addEventListener('click', () => {
+        this.audio.init();
+        this.audio.resume();
+        this.triggerAtmosphericThunder();
+        this.showToast('⚡ TROVÃO! O relâmpago iluminou a mansão!', 2.5);
+      });
+    }
+
     const muteBtn = document.getElementById('muteBtn');
     if (muteBtn) {
       muteBtn.addEventListener('click', () => {
@@ -105,6 +115,9 @@ class Game {
 
       if (e.code === 'KeyL') {
         this.toggleAdminLights();
+      } else if (e.code === 'KeyT') {
+        this.triggerAtmosphericThunder();
+        this.showToast('⚡ TROVÃO! O relâmpago iluminou a mansão!', 2.5);
       } else if (this.gameState === 'TITLE' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyW')) {
         this.startGame();
       } else if ((this.gameState === 'GAMEOVER' || this.gameState === 'VICTORY') && e.code === 'KeyR') {
@@ -188,7 +201,7 @@ class Game {
     this.gameState = 'PLAYING';
     this.startTime = performance.now();
     this.thirdKeyTriggered = false;
-    this.thunderTimer = Math.random() * 5 + 8;
+    this.thunderTimer = 3.0; // First thunder strikes after 3 seconds of gameplay!
     this.showToast('Você está preso na residência. Encontre as 3 chaves douradas!');
 
     console.log('--- NOVA PARTIDA INICIADA ---');
@@ -210,7 +223,7 @@ class Game {
     this.player.reset(this.map.playerSpawn.x, this.map.playerSpawn.y);
     this.enemy.reset(this.map.enemySpawn.x, this.map.enemySpawn.y);
     this.thirdKeyTriggered = false;
-    this.thunderTimer = Math.random() * 5 + 8;
+    this.thunderTimer = 3.0;
     this.bullets = [];
     this.particles = new ParticleSystem();
     this.audio.setHeartbeatRate('slow');

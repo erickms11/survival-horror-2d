@@ -402,7 +402,13 @@ export class SoundManager {
   playThunder() {
     if (!this.ctx || this.isMuted) return;
 
+    // Ensure audio context is running
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+
     const t = this.ctx.currentTime;
+    console.log('⚡ [Áudio] Estrondo de Trovão disparado!');
 
     // 1. Initial sharp crack / lightning snap (high frequencies)
     const crackLen = Math.floor(this.ctx.sampleRate * 0.14);
@@ -419,22 +425,23 @@ export class SoundManager {
     crackFilter.frequency.setValueAtTime(600, t);
 
     const crackGain = this.ctx.createGain();
-    crackGain.gain.setValueAtTime(0.4, t);
+    crackGain.gain.setValueAtTime(0.65, t);
     crackGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
 
     crackSource.connect(crackFilter);
     crackFilter.connect(crackGain);
     crackGain.connect(this.ctx.destination);
     crackSource.start(t);
+    crackSource.stop(t + 0.18);
 
     // 2. Heavy Sub-Bass Boom (the visceral physical impact)
     const boomOsc = this.ctx.createOscillator();
     const boomGain = this.ctx.createGain();
     boomOsc.type = 'triangle';
-    boomOsc.frequency.setValueAtTime(90, t);
+    boomOsc.frequency.setValueAtTime(110, t);
     boomOsc.frequency.exponentialRampToValueAtTime(26, t + 1.4);
 
-    boomGain.gain.setValueAtTime(0.6, t);
+    boomGain.gain.setValueAtTime(0.9, t);
     boomGain.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
 
     boomOsc.connect(boomGain);
@@ -448,7 +455,6 @@ export class SoundManager {
     const rumbleData = rumbleBuffer.getChannelData(0);
     for (let i = 0; i < rumbleLen; i++) {
       const progress = i / this.ctx.sampleRate;
-      // Rolling peaks to sound like echoes reflecting off distant hills and walls
       const wave = 0.6 + 0.4 * Math.sin(progress * 7.5);
       const envelope = Math.exp(-progress / 0.95);
       rumbleData[i] = (Math.random() * 2 - 1) * wave * envelope;
@@ -458,16 +464,17 @@ export class SoundManager {
 
     const rumbleFilter = this.ctx.createBiquadFilter();
     rumbleFilter.type = 'lowpass';
-    rumbleFilter.frequency.setValueAtTime(240, t);
-    rumbleFilter.frequency.linearRampToValueAtTime(90, t + 2.6);
+    rumbleFilter.frequency.setValueAtTime(280, t);
+    rumbleFilter.frequency.linearRampToValueAtTime(80, t + 2.6);
 
     const rumbleGain = this.ctx.createGain();
-    rumbleGain.gain.setValueAtTime(0.48, t);
+    rumbleGain.gain.setValueAtTime(0.7, t);
     rumbleGain.gain.exponentialRampToValueAtTime(0.001, t + 2.8);
 
     rumbleSource.connect(rumbleFilter);
     rumbleFilter.connect(rumbleGain);
     rumbleGain.connect(this.ctx.destination);
     rumbleSource.start(t);
+    rumbleSource.stop(t + 2.9);
   }
 }
