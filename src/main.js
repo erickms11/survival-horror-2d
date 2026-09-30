@@ -1,10 +1,10 @@
 // src/main.js - Game Loop, State Management, and UI Integration
-import { GameMap } from './map.js';
-import { Player } from './player.js';
-import { Enemy, ENEMY_STATE } from './enemy.js';
-import { LightingSystem } from './lighting.js';
-import { SoundManager } from './audio.js';
-import { ParticleSystem } from './bullet.js';
+import { GameMap } from './map.js?v=3.0';
+import { Player } from './player.js?v=3.0';
+import { Enemy, ENEMY_STATE } from './enemy.js?v=3.0';
+import { LightingSystem } from './lighting.js?v=3.0';
+import { SoundManager } from './audio.js?v=3.0';
+import { ParticleSystem } from './bullet.js?v=3.0';
 
 class InputManager {
   constructor() {
@@ -190,6 +190,12 @@ class Game {
     this.thirdKeyTriggered = false;
     this.thunderTimer = Math.random() * 5 + 8;
     this.showToast('Você está preso na residência. Encontre as 3 chaves douradas!');
+
+    console.log('--- NOVA PARTIDA INICIADA ---');
+    console.log('Chaves geradas:', this.map.keys.map(k => `${k.locationName} (${k.gridX},${k.gridY})`));
+    console.log('Revólver:', this.map.weapon ? `${this.map.weapon.locationName} (${this.map.weapon.gridX},${this.map.weapon.gridY})` : 'Nenhum');
+    console.log('Munição:', this.map.ammoBoxes.map(a => `${a.locationName} (${a.gridX},${a.gridY})`));
+    console.log('Inimigo Spawn:', `${this.map.enemySpawn.name} (${this.map.enemySpawn.x / 48},${this.map.enemySpawn.y / 48})`);
 
     const titleScreen = document.getElementById('titleScreen');
     if (titleScreen) titleScreen.classList.add('hidden');

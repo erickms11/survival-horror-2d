@@ -31,7 +31,7 @@ export const MAP_GRID = [
   [1, 0, 6, 0, 6, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 6, 0, 0, 6, 0, 0, 1],
   [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-  [1, 0, 6, 6, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 8, 6, 6, 0, 0, 1, 0, 1],
+  [1, 0, 6, 6, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 0, 6, 6, 0, 0, 1, 0, 1],
   [1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1],
   [1, 0, 0, 0, 0, 0, 6, 0, 1, 0, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 1, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
@@ -40,32 +40,44 @@ export const MAP_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// Pool of 12 atmospheric, strictly verified open floor spawn spots for keys across all wings
+// Pool of 12 atmospheric, 100% PRISTINE open floor spots for keys (0 obstacles in 3x3 box)
 export const KEY_SPAWN_LOCATIONS = [
-  { col: 3, row: 1, name: 'Quarto Noroeste' },
-  { col: 3, row: 3, name: 'Aposento Superior Oeste' },
-  { col: 7, row: 1, name: 'Corredor Norte' },
-  { col: 21, row: 1, name: 'Quarto Nordeste' },
-  { col: 18, row: 3, name: 'Aposento Leste Superior' },
-  { col: 3, row: 5, name: 'Ala Oeste' },
-  { col: 3, row: 7, name: 'Salão Oeste' },
-  { col: 21, row: 7, name: 'Sala de Estar Leste' },
-  { col: 4, row: 10, name: 'Entrada da Biblioteca' },
-  { col: 3, row: 12, name: 'Biblioteca Antiga' },
-  { col: 11, row: 15, name: 'Corredor Central Sul' },
-  { col: 21, row: 15, name: 'Fundo do Porão' },
+  { col: 4, row: 3, name: 'Quarto Noroeste' },
+  { col: 3, row: 4, name: 'Aposento Superior Oeste' },
+  { col: 6, row: 7, name: 'Corredor Oeste' },
+  { col: 4, row: 13, name: 'Biblioteca Oeste' },
+  { col: 3, row: 14, name: 'Depósito da Biblioteca' },
+  { col: 22, row: 1, name: 'Quarto Nordeste' },
+  { col: 17, row: 3, name: 'Aposento Leste' },
+  { col: 22, row: 7, name: 'Sala de Estar Leste' },
+  { col: 20, row: 10, name: 'Sala dos Espelhos' },
+  { col: 21, row: 12, name: 'Armazém Leste' },
+  { col: 8, row: 8, name: 'Galeria Central' },
+  { col: 11, row: 15, name: 'Catacumbas do Sul' },
 ];
 
-// Pool of 8 atmospheric, strictly verified open floor spawn spots for the Revolver
+// Pool of 8 atmospheric, 100% PRISTINE open floor spots for the Revolver (0 obstacles in 3x3 box)
 export const WEAPON_SPAWN_LOCATIONS = [
-  { col: 22, row: 2, name: 'Quarto Nordeste' },
-  { col: 1, row: 1, name: 'Canto do Quarto Noroeste' },
-  { col: 18, row: 5, name: 'Ala Leste' },
-  { col: 5, row: 13, name: 'Depósito da Biblioteca' },
-  { col: 21, row: 12, name: 'Armazém Leste' },
-  { col: 18, row: 15, name: 'Adega Subterrânea' },
-  { col: 4, row: 15, name: 'Catacumbas Oeste' },
-  { col: 19, row: 10, name: 'Sala dos Espelhos' },
+  { col: 22, row: 2, name: 'Gabinete Leste' },
+  { col: 8, row: 1, name: 'Aposento Norte' },
+  { col: 18, row: 4, name: 'Ala Leste Superior' },
+  { col: 22, row: 5, name: 'Corredor Leste' },
+  { col: 13, row: 8, name: 'Salão Central Leste' },
+  { col: 22, row: 11, name: 'Sala dos Espelhos Fundo' },
+  { col: 18, row: 14, name: 'Adega Subterrânea' },
+  { col: 10, row: 16, name: 'Catacumba Sul Oeste' },
+];
+
+// Pool of 8 atmospheric, 100% PRISTINE open floor spots for Ammo boxes (0 obstacles in 3x3 box)
+export const AMMO_SPAWN_LOCATIONS = [
+  { col: 12, row: 1, name: 'Armário Superior' },
+  { col: 22, row: 3, name: 'Quarto Leste' },
+  { col: 15, row: 7, name: 'Entrada da Galeria' },
+  { col: 10, row: 8, name: 'Centro da Mansão' },
+  { col: 22, row: 8, name: 'Canto da Sala de Estar' },
+  { col: 13, row: 12, name: 'Hall Sul' },
+  { col: 20, row: 13, name: 'Depósito Leste' },
+  { col: 12, row: 16, name: 'Catacumba Sul Leste' },
 ];
 
 // Pool of 6 eerie spawn spots for the enemy far from player spawn
@@ -108,7 +120,7 @@ export class GameMap {
       name: randEnemyLoc.name,
     };
 
-    // 2. Pick 3 distinct random spawn spots for the Keys from the verified floor pool
+    // 2. Pick 3 distinct random spawn spots for the Keys from the pristine floor pool
     const shuffledKeys = [...KEY_SPAWN_LOCATIONS].sort(() => Math.random() - 0.5);
     const chosenKeyLocs = [];
     for (let i = 0; i < shuffledKeys.length && chosenKeyLocs.length < 3; i++) {
@@ -150,23 +162,35 @@ export class GameMap {
       }
     }
 
-    // 4. Scan grid for static elements (Exit door, ammo)
+    // 4. Pick random spawn spots for Ammo boxes (2 boxes per playthrough in distinct rooms)
+    const shuffledAmmo = [...AMMO_SPAWN_LOCATIONS].sort(() => Math.random() - 0.5);
+    const occupiedSpots = [...chosenKeyLocs];
+    if (this.weapon) occupiedSpots.push({ col: this.weapon.gridX, row: this.weapon.gridY });
+
+    for (const aLoc of shuffledAmmo) {
+      if (this.ammoBoxes.length >= 2) break;
+      const conflict = occupiedSpots.some(i => i.col === aLoc.col && i.row === aLoc.row);
+      if (!conflict && !this.isSolid(aLoc.col, aLoc.row)) {
+        occupiedSpots.push(aLoc);
+        this.ammoBoxes.push({
+          gridX: aLoc.col,
+          gridY: aLoc.row,
+          x: (aLoc.col + 0.5) * TILE_SIZE,
+          y: (aLoc.row + 0.5) * TILE_SIZE,
+          collected: false,
+          amount: 6,
+          animTimer: Math.random() * Math.PI,
+          locationName: aLoc.name,
+        });
+      }
+    }
+
+    // 5. Scan grid for static elements (Exit door)
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const tile = this.grid[r][c];
-        if (tile === TILE.WEAPON) {
-          // If any legacy weapon tile remained, clear it to floor
-          this.grid[r][c] = TILE.FLOOR;
-        } else if (tile === TILE.AMMO) {
-          this.ammoBoxes.push({
-            gridX: c,
-            gridY: r,
-            x: (c + 0.5) * TILE_SIZE,
-            y: (r + 0.5) * TILE_SIZE,
-            collected: false,
-            amount: 6,
-            animTimer: Math.random() * Math.PI,
-          });
+        if (tile === TILE.WEAPON || tile === TILE.AMMO) {
+          // If any legacy weapon or ammo tile remained, clear it to floor
           this.grid[r][c] = TILE.FLOOR;
         } else if (tile === TILE.EXIT_DOOR) {
           this.exitDoor = {
